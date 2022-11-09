@@ -10,12 +10,13 @@ const { ObjectId } = require("mongodb");
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 
-const port = process.env.PORT || 3001;
+const port = process.env.PORT;
 const dburi = process.env.DBURI;
 
-const { Ad } = require("./models/ad");
+const { Event } = require("./models/event");
 const { User } = require("./models/user");
 
+// Connect to mongoose app from .env files
 mongoose.connect(dburi, { useNewUrlParser: true, useUnifiedTopology: true });
 
 // defining the Express app
@@ -34,59 +35,76 @@ app.use(cors());
 app.use(morgan("combined"));
 
 app.post("/auth", async (req, res) => {
-  const user = await User.findOne({ userName: req.body.userName });
-  if (!user) {
-    return res.sendStatus(401);
-  }
-  if (req.body.password !== user.password) {
-    return res.sendStatus(403);
-  }
-  user.token = uuidv4();
-  await user.save();
+	// Auth login function
+	const user = await User.findOne({ userName: req.body.userName });
+	if (!user) {
+		// Username not found in DB
+		return res.sendStatus(401);
+	}
+	if (req.body.password !== user.password) {
+		// Password not matching
+		return res.sendStatus(403);
+	}
+	// Set unique token
+	user.token = uuidv4();
+	// Update changes to user in the db (to save the new token)
+	await user.save();
+	// TODO: come back to me
+	res.send({ token: user.token });
+});
 
-  res.send({ token: user.token });
+app.post("/register", async (req, res) => {
+	const newUser = req.body;
+	const user = new User(newUser);
+	await user.save();
+	res.send({ message: "New account created." });
 });
 
 // custom midddleware
-app.use(async (req, res, next) => {
-  const user = await User.findOne({ token: req.headers.authorization });
-  if (user) {
-    next();
-  } else {
-    res.sendStatus(403);
-  }
-});
+// Check users in db against token generated line 53
+// TODO: Ask vincent about if this is necessary
+
+// app.use(async (req, res, next) => {
+// 	const user = await User.findOne({ token: req.headers.authorization });
+// 	if (user) {
+// 		next();
+// 	} else {
+// 		res.sendStatus(403);
+// 	}
+// });
 
 //PROTECTED ROUTES
 // defining CRUD operations
 app.get("/", async (req, res) => {
-  res.send(await Ad.find());
+	res.send(await Event.find());
 });
 
 app.post("/", async (req, res) => {
-  const newAd = req.body;
-  const ad = new Ad(newAd);
-  await ad.save();
-  res.send({ message: "New ad inserted." });
+	// Create new ad and add to db
+	const newEvent = req.body;
+	const event = new Event(newEvent);
+	await event.save();
+	res.send({ message: "New event inserted." });
 });
 
+// Delete by specified ID
 app.delete("/:id", async (req, res) => {
-  await Ad.deleteOne({ _id: ObjectId(req.params.id) });
-  res.send({ message: "Ad removed." });
+	await Event.deleteOne({ _id: ObjectId(req.params.id) });
+	res.send({ message: "Event removed." });
 });
 
 app.post("/:id", async (req, res) => {
-  await Ad.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
-  res.send({ message: "Ad updated." });
+	await Event.findOneAndUpdate({ _id: ObjectId(req.params.id) }, req.body);
+	res.send({ message: "Events updated." });
 });
 
 // starting the server
 app.listen(port, () => {
-  console.log(`listening on port ${port}`);
+	console.log(`listening on port ${port}`);
 });
 
 var db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", function callback() {
-  console.log("Database connected!");
+	console.log("Database connected!");
 });
