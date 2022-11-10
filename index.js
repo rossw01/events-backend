@@ -15,7 +15,6 @@ const dburi = process.env.DBURI;
 
 const { Event } = require("./models/event");
 const { User } = require("./models/user");
-const e = require("express");
 
 // Connect to mongoose app from .env files
 mongoose.connect(dburi, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -37,7 +36,10 @@ app.use(morgan("combined"));
 
 app.post("/auth", async (req, res) => {
 	// Auth login function
-	const user = await User.findOne({ userName: req.body.userName });
+	const user = await User.findOne({
+		userName: req.body.userName,
+		password: req.body.password,
+	});
 	if (!user) {
 		// Username not found in DB
 		return res.sendStatus(401);

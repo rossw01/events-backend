@@ -7,6 +7,7 @@ const eventSchema = mongoose.Schema({
 	date: String,
 	time: String,
 	image: String,
+	username: String,
 });
 
 module.exports.Event = mongoose.model("Event", eventSchema);
