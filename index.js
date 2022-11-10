@@ -15,6 +15,7 @@ const dburi = process.env.DBURI;
 
 const { Event } = require("./models/event");
 const { User } = require("./models/user");
+const e = require("express");
 
 // Connect to mongoose app from .env files
 mongoose.connect(dburi, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -77,6 +78,12 @@ app.post("/register", async (req, res) => {
 // defining CRUD operations
 app.get("/", async (req, res) => {
 	res.send(await Event.find());
+});
+
+app.get("/user/:id", async (req, res) => {
+	await User.find({ token: req.params.id }, (error, data) => {
+		res.send(data);
+	});
 });
 
 app.post("/", async (req, res) => {
